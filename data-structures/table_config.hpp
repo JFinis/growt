@@ -26,23 +26,23 @@ enum class slot_type_enum
     single_word_slot = 3
 };
 
-template <size_t, size_t, bool>
+template <size_t, size_t, bool, typename Alloc>
 struct slot_config
 {
     template <class K, class M, bool NM>
-    using templ = complex_slot<K, M, NM>;
+    using templ = complex_slot<K, M, NM, Alloc>;
 };
 
-template <>
-struct slot_config<16, 8, false>
+template <typename Alloc>
+struct slot_config<16, 8, false, Alloc>
 {
     template <class K, class M, bool NM>
     using templ = simple_slot<K, M, NM>;
 };
 
 
-template <>
-struct slot_config<8, 4, false>
+template <typename Alloc>
+struct slot_config<8, 4, false, Alloc>
 {
     template <class K, class M, bool NM>
     using templ = single_word_slot<K, M, NM>;
@@ -81,7 +81,7 @@ class table_config
     using base_table_config = base_linear_config<
         typename slot_config<sizeof(value_type),
                              sizeof(key_type),
-                             needs_growing_with_ref_integrity>::
+                             needs_growing_with_ref_integrity, allocator_type>::
             template templ<key_type, mapped_type, needs_marking>,
         HashFct,
         Allocator,

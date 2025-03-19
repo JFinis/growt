@@ -169,16 +169,8 @@ class complex_slot
         return slot_type(r);
     }
 
-    static value_type* allocate()
-    {
-        // return static_cast<value_type*>(malloc(sizeof(value_type)));
-        return std::allocator_traits<allocator_type>::allocate(allocator, 1);
-    }
-    static void deallocate(value_type* ptr)
-    {
-        // free(ptr);
-        std::allocator_traits<allocator_type>::deallocate(allocator, ptr, 1);
-    }
+    static value_type* allocate();
+    static void deallocate(value_type* ptr);
 
     static std::string name() { return "complex_slot"; }
 
@@ -186,6 +178,32 @@ class complex_slot
     static allocator_type allocator;
 };
 
+template <class Key,
+          class Data,
+          bool markable,
+          class Allocator>
+typename complex_slot<Key, Data, markable, Allocator>::allocator_type
+    complex_slot<Key, Data, markable, Allocator>::allocator;
+
+
+    template <class Key,
+    class Data,
+    bool markable,
+    class Allocator>
+    std::pair<const Key, Data>* complex_slot<Key, Data, markable, Allocator>::allocate()
+    {
+        // return static_cast<value_type*>(malloc(sizeof(value_type)));
+        return std::allocator_traits<allocator_type>::allocate(allocator, 1);
+    }
+    template <class Key,
+              class Data,
+              bool markable,
+              class Allocator>
+    void complex_slot<Key, Data, markable, Allocator>::deallocate(value_type* ptr)
+    {
+        // free(ptr);
+        // std::allocator_traits<allocator_type>::deallocate(allocator, ptr, 1);
+    }
 
 
 // SLOT_TYPE *******************************************************************
@@ -356,6 +374,8 @@ bool complex_slot<K, D, m, A>::slot_type::compare_key(const key_type& k,
         // debug::if_debug("comparison with an empty slot");
         return false;
     }
+    // XXX Added by @JFinis, otherwise, this segfaults for deleted keys, as ptr is a dummy value
+    if (is_deleted()) return false;
     return ptr->first == k;
 }
 
@@ -491,7 +511,7 @@ bool complex_slot<K, D, m, A>::atomic_slot_type::atomic_delete(
     slot_type& expected)
 {
     return _aptr.compare_exchange_strong(expected._mfptr.full,
-                                         get_deleted._mfptr.full,
+                                         get_deleted()._mfptr.full,
                                          std::memory_order_relaxed);
 }
 
